@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu Asistente C12 · Networking</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1B4F9B;--blue-d:#0D3572;--teal:#00AECC;--green:#5CB85C;
+  --bg:#EEF4FB;--white:#FFF;--text:#1A2E4A;--mid:#4A6080;--dim:#8AA0BC;
+  --bdr:rgba(27,79,155,0.14);--bdt:rgba(0,174,204,0.2);
+  --sh:0 2px 12px rgba(0,100,180,0.09);--r:14px;--rs:9px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:15px;min-height:100vh;display:flex;flex-direction:column}
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--white);border-bottom:1px solid var(--bdr);box-shadow:var(--sh);z-index:10}
+.logo-img{height:36px;width:72px;object-fit:contain}
+.hbadge{font-size:10px;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid var(--bdt);color:var(--teal);background:rgba(0,174,204,0.07);letter-spacing:.07em}
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(238,244,251,0.93);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.loading-overlay.active{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--teal);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:13px;color:var(--mid);font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.07em}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;font-family:'Syne',sans-serif;transition:transform .3s;z-index:200;white-space:nowrap;box-shadow:0 4px 16px rgba(92,184,92,.35)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.container{flex:1;display:flex;flex-direction:column;max-width:640px;width:100%;margin:0 auto;padding:0 16px}
+.screen{display:none;flex-direction:column;flex:1}
+.screen.active{display:flex}
+
+/* WELCOME */
+.wc{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 0 36px;gap:22px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--blue);text-transform:uppercase}
+.wtitle{font-family:'Syne',sans-serif;font-size:clamp(26px,6vw,36px);font-weight:800;line-height:1.1;color:var(--blue-d)}
+.wtitle em{font-style:normal;background:linear-gradient(90deg,var(--blue),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.wbody{font-size:14px;color:var(--blue);line-height:1.7}
+.code-card{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--sh)}
+.cc-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--blue-d)}
+.cc-hint{font-size:12px;color:var(--blue);line-height:1.55;background:rgba(0,174,204,.07);border:1px solid var(--bdt);border-radius:8px;padding:9px 12px;display:flex;gap:8px;align-items:flex-start}
+.cc-hint::before{content:'✉';flex-shrink:0}
+.code-row{display:flex;gap:10px}
+.code-input{flex:1;max-width:170px;background:var(--bg);border:1.5px solid var(--bdt);border-radius:var(--rs);padding:13px 16px;text-align:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:.2em;color:var(--blue-d);text-transform:uppercase;outline:none;transition:border-color .2s,box-shadow .2s}
+.code-input::placeholder{color:var(--dim);font-weight:400;font-size:14px;letter-spacing:.08em}
+.code-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,174,204,.12);background:white}
+.btn-go{flex:1;background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:13px 20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:.05em;cursor:pointer;box-shadow:0 3px 12px rgba(92,184,92,.35);transition:opacity .15s,transform .1s}
+.btn-go:hover{opacity:.9}
+.btn-go:active{transform:scale(.97)}
+.err{font-size:12px;color:#E74C3C;margin-top:4px}
+.demo-sec{border-top:1px solid var(--bdr);padding-top:12px}
+.demo-hint{font-size:11px;color:var(--blue);font-weight:500;margin-bottom:8px}
+.demo-codes{display:flex;gap:8px;flex-wrap:wrap}
+.dc-btn{background:rgba(0,174,204,.06);border:1px solid var(--bdt);border-radius:6px;padding:5px 12px;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--teal);cursor:pointer;transition:background .15s}
+.dc-btn:hover{background:rgba(0,174,204,.14)}
+.dc-lbl{font-size:10px;color:var(--dim);margin-top:2px}
+
+/* USER BAR */
+.user-bar{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--bdr);margin-bottom:2px}
+.uavatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.uinfo{flex:1;min-width:0}
+.uname{font-size:13px;font-weight:500;color:var(--text)}
+.umeta{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rbadge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.06em;flex-shrink:0;font-family:'Syne',sans-serif}
+.rc{background:rgba(0,174,204,.1);color:var(--teal);border:1px solid rgba(0,174,204,.3)}
+.rp{background:rgba(92,184,92,.1);color:var(--green);border:1px solid rgba(92,184,92,.3)}
+
+/* CHAT */
+.chat-wrap{flex:1;overflow-y:auto;padding:16px 0 8px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.msg{display:flex;gap:8px;animation:fu .25s ease both}
+.msg.user{flex-direction:row-reverse}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mavatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:2px;font-family:'Syne',sans-serif}
+.mavatar.ai{background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff}
+.mavatar.me{background:white;border:1.5px solid var(--bdr);color:var(--blue)}
+.bubble{max-width:82%;padding:11px 15px;border-radius:16px;line-height:1.6;font-size:14px}
+.bubble.ai{background:white;border:1px solid var(--bdr);border-radius:4px 16px 16px 16px;color:var(--text);box-shadow:var(--sh)}
+.bubble.user{background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:16px 4px 16px 16px;color:#fff}
+.tdots{display:flex;gap:4px;padding:4px 0;align-items:center}
+.tdots span{width:6px;height:6px;border-radius:50%;background:var(--teal);opacity:.4;animation:dot 1.2s infinite}
+.tdots span:nth-child(2){animation-delay:.2s}
+.tdots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.4;transform:scale(1)}40%{opacity:1;transform:scale(1.3)}}
+.quick-replies{display:flex;flex-wrap:wrap;gap:7px;padding:6px 0}
+.qr{background:white;border:1px solid var(--bdt);border-radius:20px;padding:7px 14px;font-size:12px;color:var(--blue);cursor:pointer;font-family:'Inter',sans-serif;font-weight:500;box-shadow:0 1px 4px rgba(0,100,180,.07);transition:all .15s}
+.qr:hover{background:rgba(0,174,204,.08);border-color:var(--teal);color:var(--teal)}
+.chat-input-area{padding:10px 0 18px;border-top:1px solid var(--bdr)}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;background:white;border:1.5px solid var(--bdr);border-radius:var(--rs);padding:11px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;resize:none;min-height:44px;max-height:110px;line-height:1.5;box-shadow:0 1px 4px rgba(0,100,180,.06);transition:border-color .2s,box-shadow .2s}
+.chat-input::placeholder{color:var(--dim)}
+.chat-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,174,204,.1)}
+.send-btn{width:44px;height:44px;border-radius:var(--rs);background:linear-gradient(135deg,var(--blue),var(--teal));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,100,180,.25);transition:opacity .15s}
+.send-btn:hover{opacity:.88}
+.send-btn:disabled{opacity:.3;cursor:not-allowed}
+.send-btn svg{width:17px;height:17px}
+
+/* RESULTS */
+.results-header{padding:14px 0 8px;border-bottom:1px solid var(--bdr);margin-bottom:4px}
+.rtitle{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--blue-d);margin-bottom:3px}
+.rsub{font-size:12px;color:var(--dim)}
+
+/* SEARCH TABS */
+.search-tabs{display:flex;gap:6px;padding:10px 0 0;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+.search-tabs::-webkit-scrollbar{display:none}
+.stab{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;border-radius:20px;border:1px solid var(--bdr);background:white;color:var(--mid);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.stab.active{background:linear-gradient(135deg,var(--blue),var(--teal));color:white;border-color:transparent;box-shadow:0 2px 8px rgba(0,100,180,.2)}
+.stab:hover:not(.active){border-color:var(--teal);color:var(--teal)}
+.stab-new{background:transparent;border:1px dashed var(--bdt);color:var(--teal);font-size:11px}
+.stab-new:hover{background:rgba(0,174,204,.06)}
+
+.results-list{flex:1;overflow-y:auto;padding:12px 0 24px;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.mcard{background:white;border:1px solid var(--bdr);border-radius:var(--r);padding:16px;margin-bottom:10px;box-shadow:var(--sh);animation:fu .3s ease both;transition:border-color .2s,box-shadow .2s}
+.mcard:hover{border-color:var(--teal);box-shadow:0 4px 20px rgba(0,100,180,.13)}
+.mhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.mrank{font-size:10px;color:var(--dim);font-weight:600;letter-spacing:.08em;margin-bottom:2px;font-family:'Syne',sans-serif}
+.mname{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--blue-d);margin-bottom:2px}
+.mmeta{font-size:12px;color:var(--dim)}
+.mscore{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1;flex-shrink:0;background:linear-gradient(135deg,var(--blue),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.mscore-pct{font-size:13px;font-weight:500}
+.mreason{font-size:13px;color:var(--mid);line-height:1.65;padding:10px 12px;background:rgba(0,174,204,.05);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;margin-bottom:12px}
+.mtags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.mtag{font-size:10px;padding:3px 9px;border-radius:4px;background:rgba(27,79,155,.07);border:1px solid rgba(27,79,155,.12);color:var(--blue);font-weight:500}
+.btn-cita{width:100%;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;border:none;border-radius:var(--rs);padding:11px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:.05em;cursor:pointer;box-shadow:0 2px 8px rgba(0,100,180,.2);transition:opacity .15s}
+.btn-cita:hover{opacity:.9}
+.search-label{font-size:11px;color:var(--dim);font-style:italic;margin-bottom:12px;padding:6px 10px;background:rgba(0,174,204,.04);border-radius:6px;border:0.5px solid var(--bdt)}
+.btn-new-search{width:100%;background:white;border:1.5px dashed var(--bdt);border-radius:var(--rs);padding:12px;color:var(--teal);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .15s;letter-spacing:.04em}
+.btn-new-search:hover{background:rgba(0,174,204,.05)}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <img class="logo-img" alt="C12 HUB" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iQ2FwYV8xIiBkYXRhLW5hbWU9IkNhcGEgMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmlld0JveD0iMCAwIDIwMCAxMDAiPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuY2xzLTEgewogICAgICAgIGZpbGw6IHVybCgjRGVncmFkYWRvX3Npbl9ub21icmVfOS0yKTsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiB1cmwoI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzktNik7CiAgICAgIH0KCiAgICAgIC5jbHMtMyB7CiAgICAgICAgZmlsbDogdXJsKCNEZWdyYWRhZG9fc2luX25vbWJyZV85LTQpOwogICAgICB9CgogICAgICAuY2xzLTQgewogICAgICAgIGZpbGw6IHVybCgjRGVncmFkYWRvX3Npbl9ub21icmVfOS0zKTsKICAgICAgfQoKICAgICAgLmNscy01IHsKICAgICAgICBmaWxsOiB1cmwoI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzkpOwogICAgICB9CgogICAgICAuY2xzLTYgewogICAgICAgIGZpbGw6IHVybCgjRGVncmFkYWRvX3Npbl9ub21icmVfOS04KTsKICAgICAgfQoKICAgICAgLmNscy03IHsKICAgICAgICBmaWxsOiB1cmwoI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzktOSk7CiAgICAgIH0KCiAgICAgIC5jbHMtOCB7CiAgICAgICAgZmlsbDogdXJsKCNEZWdyYWRhZG9fc2luX25vbWJyZV85LTcpOwogICAgICB9CgogICAgICAuY2xzLTkgewogICAgICAgIGZpbGw6IHVybCgjRGVncmFkYWRvX3Npbl9ub21icmVfOS01KTsKICAgICAgfQoKICAgICAgLmNscy0xMCB7CiAgICAgICAgZmlsbDogIzAxNjRiYTsKICAgICAgfQogICAgPC9zdHlsZT4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iRGVncmFkYWRvX3Npbl9ub21icmVfOSIgZGF0YS1uYW1lPSJEZWdyYWRhZG8gc2luIG5vbWJyZSA5IiB4MT0iLS4yIiB5MT0iLTE3MDkuNTMiIHgyPSIyMDEuMTIiIHkyPSItMTcwNi41NiIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgwIC0xNjgxLjc5KSBzY2FsZSgxIC0xKSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMwMTRmYjMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIuNSIgc3RvcC1jb2xvcj0iIzAxYWZkMSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM3NGMxMzciLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9IkRlZ3JhZGFkb19zaW5fbm9tYnJlXzktMiIgeDE9Ii0uMiIgeTE9Ii0xNzA5LjU1IiB4Mj0iMjAxLjEyIiB5Mj0iLTE3MDYuNiIgeGxpbms6aHJlZj0iI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzkiLz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iRGVncmFkYWRvX3Npbl9ub21icmVfOS0zIiB4MT0iLjA0IiB5MT0iLTE3MjUuNjIiIHgyPSIyMDEuMzYiIHkyPSItMTcyMi42NyIgeGxpbms6aHJlZj0iI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzkiLz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iRGVncmFkYWRvX3Npbl9ub21icmVfOS00IiB4MT0iLjA0IiB5MT0iLTE3MjUuOTIiIHgyPSIyMDEuMzYiIHkyPSItMTcyMi45NyIgeGxpbms6aHJlZj0iI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzkiLz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iRGVncmFkYWRvX3Npbl9ub21icmVfOS01IiB4MT0iLjA0IiB5MT0iLTE3MjUuMjciIHgyPSIyMDEuMzYiIHkyPSItMTcyMi4zMiIgeGxpbms6aHJlZj0iI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzkiLz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iRGVncmFkYWRvX3Npbl9ub21icmVfOS02IiB4MT0iLS43IiB5MT0iLTE3MjYuMTYiIHgyPSIyMDAuNjQiIHkyPSItMTcyMy4yIiB4bGluazpocmVmPSIjRGVncmFkYWRvX3Npbl9ub21icmVfOSIvPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJEZWdyYWRhZG9fc2luX25vbWJyZV85LTciIHgxPSItMi41MyIgeTE9Ii0xNzI2LjIxIiB4Mj0iMTk4LjgxIiB5Mj0iLTE3MjMuMjYiIHhsaW5rOmhyZWY9IiNEZWdyYWRhZG9fc2luX25vbWJyZV85Ii8+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9IkRlZ3JhZGFkb19zaW5fbm9tYnJlXzktOCIgeDE9Ii0yLjUyIiB5MT0iLTE3MjYuOTUiIHgyPSIxOTguODEiIHkyPSItMTcyNCIgeGxpbms6aHJlZj0iI0RlZ3JhZGFkb19zaW5fbm9tYnJlXzkiLz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iRGVncmFkYWRvX3Npbl9ub21icmVfOS05IiB4MT0iLTIuNTEiIHkxPSItMTcyNy4yNyIgeDI9IjE5OC44MSIgeTI9Ii0xNzI0LjI5IiB4bGluazpocmVmPSIjRGVncmFkYWRvX3Npbl9ub21icmVfOSIvPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik03OSwyNi42MmMwLDEuNTEtMS4yNCwyLjc0LTIuNzQsMi43NHMtMi43NC0xLjI0LTIuNzQtMi43NCwxLjI0LTIuNzQsMi43NC0yLjc0LDIuNzQsMS4yNCwyLjc0LDIuNzRaTTc4LjM3LDI2LjZjMC0xLjE2LS45NS0yLjEtMi4xLTIuMXMtMi4xLjk1LTIuMSwyLjEuOTUsMi4xLDIuMSwyLjEsMi4xLS45NSwyLjEtMi4xWiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTc2Ljk0LDI1LjI2Yy41Ni4xMi43NSwxLjI0LjA2LDEuMzF2LjIxYy40Ni4wOC40Mi44My41NCwxLjItMS4xNi4zMy0uNTItMS4xOC0xLjQ3LTEuMS0uNDQuMDQtLjIzLjc5LS4yNywxLjFoLS41NHYtMi43MmMuNS4wOCwxLjI0LS4xLDEuNjgsMFpNNzUuOTEsMjYuNDZjMS4xNi4xNSwxLjE2LS45MSwwLS43N3YuNzdaIi8+CiAgPHBhdGggY2xhc3M9ImNscy00IiBkPSJNNDYuNTEsNjIuMzVWMjMuOTVsLTE0LjI1LDYuMDJ2OC43NWw2LjMzLTIuNTd2MjYuMmg3LjkyWiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTU2LjIyLDM4Ljd2LTEuNDVjLjA4LTEuNDEuNjQtNC43MSw0LjA1LTQuNzksMS4yNC0uMDIsMi4yMi4zMSwyLjksMSwxLjIyLDEuMjQsMS4xNCwzLjIyLDEuMTQsMy4yNiwwLDAsMCwxLjM5LS45NywyLjg2LS43OSwxLjIyLTExLjA4LDE0LjQ2LTE1LjQ4LDIwLjFsLS4wOC4xdjIuNTdoMjUuODF2LTcuNDFoLTExLjAyYzEuNTgtMi4xNCw3LjQ1LTEwLjE0LDkuMDYtMTIuNTEsMi4yNC0zLjM0LDIuMzYtOC40LjI5LTEyLjI4LTIuMTItNC02LjE2LTYuMi0xMS4zNS02LjItMTIuMTYsMC0xMi43NiwxMi4yNi0xMi44LDEzLjY3djEuMWg4LjQybC4wNC0uMDJaIi8+CiAgPHBhdGggY2xhc3M9ImNscy05IiBkPSJNMzcuMyw1Mi4xNmMtMS45MS0uOTgtMy43NS0yLjEtNS42LTMuMTctLjI1LS4xNS0uNDEtLjE5LS42LjEyLTEuODcsMi45My00LjU0LDQuNzEtOC4wMSw1LjEyLTMuOTQuNDQtNy4yOC0uODEtOS45LTMuOC0yLjA3LTIuMzYtMi45Mi01LjE2LTIuNjYtOC4yNC4yNS0zLjA1LDEuNTgtNS42LDMuOTYtNy41NSwzLjE5LTIuNjMsNi44Mi0zLjMyLDEwLjc0LTIuMDcsMi40OS43OSw0LjQsMi4zNyw1Ljc3LDQuNTh2LTcuOTdsMi41MS0xLjA4Yy0xLjE0LS45MS0yLjQxLTEuNy0zLjgtMi4zNC0zLjQtMS41OC02Ljk1LTIuMS0xMC42NC0xLjU4LTMuNjUuNTItNi45MSwxLjk1LTkuNzEsNC4zNi00LjQ0LDMuODItNi43Miw4LjY5LTYuODcsMTQuNTQsMCwuODEuMDYsMS42Mi4xNSwyLjQzLjUsNC4xMSwyLjE0LDcuNzYsNSwxMC43NCw0LjksNS4xMiwxMC45Myw3LjA5LDE3LjksNS43MSw0Ljk4LS45Nyw4Ljg4LTMuNjEsMTEuNzgtNy42N3YtMi4xMloiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4xLDIzLjg1aC0uNDZ2MzguNTJoLjQ2VjIzLjg1WiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtOCIgZD0iTTExMy40MywyNi44MWgxMC4wMnYzMi4wMWgtMTAuMDJ2LTExLjY2aC0xMi43NnYxMS42NmgtMTAuMDJWMjYuODFoMTAuMDJ2MTEuNjJoMTIuNzZ2LTExLjYyWiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtNiIgZD0iTTE1MS4yMSwyNi44MWgxMC4wNnYxNi4yOGMwLDQuNzktMS40Myw4LjcxLTQuMjksMTEuNzYtMi44NiwzLjA1LTYuODIsNC41OC0xMS45MSw0LjU4cy05LjA2LTEuNTMtMTEuODktNC41OGMtMi44NC0zLjA1LTQuMjUtNi45Ny00LjI1LTExLjc2di0xNi4yOGgxMC4wNnYxNS4yM2MwLDUuMzcsMi4wMyw4LjA1LDYuMDgsOC4wNXM2LjEyLTIuNjgsNi4xMi04LjA1di0xNS4yM2guMDJaIi8+CiAgPHBhdGggY2xhc3M9ImNscy03IiBkPSJNMTY2Ljc3LDU4Ljg0VjI2LjgzaDE3LjdjMy42NywwLDYuNDcuODMsOC40MiwyLjQ5LDEuOTUsMS42NiwyLjk0LDMuODQsMi45NCw2LjU2cy0xLjM3LDUuMzEtNC4xMSw2LjQ5YzMuODgsMS4yNyw1LjgxLDMuODQsNS44MSw3LjY4cy0uOTgsNS0yLjk3LDYuNTNjLTEuOTksMS41MS00Ljc3LDIuMjYtOC4zOCwyLjI2aC0xOS40Wk0xODMuNDYsMzQuNTVoLTYuNjh2NC4zOGg2LjQ5Yy42MiwwLDEuMTQtLjIxLDEuNi0uNjJzLjctLjk1LjctMS41OC0uMjEtMS4xNi0uNjQtMS41OGMtLjQzLS40MS0uOTEtLjYyLTEuNDctLjYydi4wMlpNMTg0LjI5LDQ1LjkyaC03LjUxdjUuMjFoNy44MmMuNzUsMCwxLjM5LS4yNSwxLjg3LS43NS40OC0uNS43My0xLjEyLjczLTEuODVzLS4yNy0xLjM1LS44My0xLjg1Yy0uNTQtLjUtMS4yNS0uNzUtMi4xLS43NWguMDJaIi8+CiAgPHBhdGggY2xhc3M9ImNscy0xMCIgZD0iTTE5NC4xMyw3Ni4xNWMtLjY1LDAtMS4yNy0uMS0xLjg3LS4zMS0uNTktLjIyLTEuMDUtLjQ5LTEuMzctLjgybC4zNi0uNzFjLjMxLjMuNzIuNTUsMS4yMy43Ni41Mi4yLDEuMDcuMywxLjY1LjNzLjk5LS4wNywxLjMzLS4yYy4zNS0uMTQuNi0uMzMuNzYtLjU2LjE3LS4yMy4yNS0uNDkuMjUtLjc3LDAtLjM0LS4xLS42Mi0uMy0uODItLjE5LS4yMS0uNDUtLjM3LS43Ni0uNDktLjMyLS4xMi0uNjYtLjIzLTEuMDUtLjMyLS4zOC0uMDktLjc3LS4xOS0xLjE1LS4yOS0uMzgtLjExLS43NC0uMjUtMS4wNi0uNDItLjMyLS4xNy0uNTctLjQtLjc3LS42OS0uMTktLjI5LS4yOS0uNjctLjI5LTEuMTMsMC0uNDMuMTEtLjgzLjM0LTEuMTguMjMtLjM3LjU5LS42NiwxLjA2LS44Ny40Ny0uMjIsMS4wOC0uMzQsMS44Mi0uMzQuNDksMCwuOTguMDcsMS40Ni4yMS40OC4xMy45LjMyLDEuMjUuNTZsLS4zMS43NGMtLjM3LS4yNS0uNzctLjQzLTEuMi0uNTUtLjQxLS4xMi0uODItLjE3LTEuMjEtLjE3LS41MiwwLS45Ni4wNy0xLjMuMjEtLjM0LjE0LS41OS4zMy0uNzYuNTctLjE2LjIzLS4yNC41LS4yNC44LDAsLjM0LjA5LjYyLjI5LjgyLjIuMjEuNDYuMzcuNzcuNDkuMzIuMTIuNjguMjIsMS4wNi4zMS4zOC4wOS43Ni4xOSwxLjEzLjMuMzguMTEuNzMuMjUsMS4wNS40Mi4zMi4xNy41OC4zOS43Ny42Ny4yLjI4LjMuNjUuMywxLjExLDAsLjQyLS4xMi44Mi0uMzUsMS4xOC0uMjMuMzYtLjU5LjY1LTEuMDcuODctLjQ3LjIyLTEuMDkuMzItMS44My4zMloiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEwIiBkPSJNMTgzLjQ2LDcxLjI1aDQuNjF2Ljc5aC00LjYxdi0uNzlaTTE4My41Niw3NS4yN2g1LjI1di44aC02LjE3di04LjczaDUuOTh2LjhoLTUuMDZ2Ny4xM1oiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEwIiBkPSJNMTc2LjcyLDc2LjE1Yy0uNjYsMC0xLjI2LS4xMS0xLjgyLS4zMi0uNTYtLjIyLTEuMDQtLjU0LTEuNDUtLjk0LS40MS0uNC0uNzMtLjg3LS45Ni0xLjQxLS4yMy0uNTQtLjM0LTEuMTMtLjM0LTEuNzdzLjExLTEuMjMuMzQtMS43N2MuMjMtLjU0LjU1LTEuMDEuOTYtMS40MS40Mi0uNC45LS43MSwxLjQ2LS45Mi41Ni0uMjIsMS4xNi0uMzQsMS44Mi0uMzRzMS4yMy4xMSwxLjc4LjMyYy41Ni4yMSwxLjAzLjUyLDEuNDEuOTVsLS41OS41OWMtLjM2LS4zNy0uNzUtLjYzLTEuMTktLjc5LS40My0uMTctLjktLjI1LTEuNC0uMjVzLTEuMDEuMDktMS40Ni4yN2MtLjQ1LjE3LS44NC40My0xLjE3Ljc2LS4zMy4zMi0uNTkuNzEtLjc5LDEuMTUtLjE4LjQzLS4yNy45MS0uMjcsMS40M3MuMDksMS4wMS4yNywxLjQ1Yy4xOS40My40NS44MS43OSwxLjE1LjMzLjMyLjcyLjU4LDEuMTcuNzYuNDUuMTcuOTQuMjYsMS40Ni4yNnMuOTYtLjA4LDEuNC0uMjVjLjQzLS4xNy44My0uNDMsMS4xOS0uOGwuNTkuNTljLS4zOC40Mi0uODUuNzQtMS40MS45Ni0uNTYuMjItMS4xNi4zMi0xLjguMzJaIi8+CiAgPHBhdGggY2xhc3M9ImNscy0xMCIgZD0iTTE2MS45Niw3Ni4wN2wzLjk5LTguNzNoLjkxbDMuOTksOC43M2gtLjk3bC0zLjY3LTguMTloLjM3bC0zLjY3LDguMTloLS45NlpNMTYzLjU0LDczLjc0bC4yNy0uNzVoNS4wN2wuMjcuNzVoLTUuNjJaIi8+CiAgPHBhdGggY2xhc3M9ImNscy0xMCIgZD0iTTE1NS45Niw3MS41N2g0LjYxdi44aC00LjYxdi0uOFpNMTU2LjA2LDc2LjA3aC0uOTJ2LTguNzNoNS45OHYuOGgtNS4wNnY3LjkzWiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtMTAiIGQ9Ik0xNDAuMDgsNzYuMDd2LTguNzNoMy41NWMuOTMsMCwxLjc1LjE5LDIuNDQuNTYuNzEuMzcsMS4yNS44OCwxLjY1LDEuNTMuMzkuNjYuNTksMS40MS41OSwyLjI3cy0uMiwxLjYxLS41OSwyLjI3Yy0uMzkuNjYtLjk0LDEuMTctMS42NSwxLjU1LS43LjM3LTEuNTEuNTUtMi40NC41NWgtMy41NVpNMTQxLDc1LjI3aDIuNThjLjc3LDAsMS40NC0uMTUsMi4wMS0uNDUuNTctLjMxLDEuMDItLjczLDEuMzMtMS4yNi4zMi0uNTQuNDctMS4xNi40Ny0xLjg2cy0uMTYtMS4zMy0uNDctMS44Ni0uNzYtLjk1LTEuMzMtMS4yNWMtLjU3LS4zMS0xLjI0LS40Ni0yLjAxLS40NmgtMi41OHY3LjEzWiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtMTAiIGQ9Ik0xMjkuMTksNzYuMDd2LTguNzNoLjc2bDYuMDIsNy41OGgtLjR2LTcuNThoLjkxdjguNzNoLS43NmwtNi4wMS03LjU4aC40djcuNThoLS45MloiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEwIiBkPSJNMTIxLjc5LDc2LjE1Yy0uNjYsMC0xLjI3LS4xMS0xLjgzLS4zMi0uNTYtLjIyLTEuMDQtLjU0LTEuNDYtLjk0LS40MS0uNDEtLjczLS44OC0uOTYtMS40MS0uMjItLjU0LS4zNC0xLjEzLS4zNC0xLjc3cy4xMS0xLjIzLjM0LTEuNzZjLjIzLS41NC41NS0xLjAxLjk2LTEuNDEuNDItLjQxLjktLjcyLDEuNDYtLjk0LjU2LS4yMiwxLjE3LS4zNCwxLjgzLS4zNHMxLjI2LjExLDEuODIuMzRjLjU2LjIyLDEuMDQuNTIsMS40NS45Mi40Mi40Ljc0Ljg3Ljk2LDEuNDEuMjMuNTQuMzUsMS4xMy4zNSwxLjc3cy0uMTIsMS4yMy0uMzUsMS43N2MtLjIyLjU0LS41NCwxLjAxLS45NiwxLjQxLS40MS40LS44OS43MS0xLjQ1Ljk0LS41Ni4yMi0xLjE2LjMyLTEuODIuMzJaTTEyMS43OSw3NS4zMmMuNTIsMCwxLjAxLS4wOSwxLjQ1LS4yNi40NS0uMTguODQtLjQ0LDEuMTYtLjc2LjMzLS4zMy41OS0uNzEuNzctMS4xNS4xOC0uNDQuMjctLjkyLjI3LTEuNDVzLS4wOS0xLS4yNy0xLjQzYy0uMTgtLjQ0LS40NC0uODItLjc3LTEuMTVjLS4zMi0uMzMtLjcxLS41OS0xLjE2LS43NmMtLjQ0LS4xOC0uOTItLjI3LTEuNDUtLjI3cy0xLjAxLjA5LTEuNDYuMjdjLS40NS4xNy0uODQuNDMtMS4xNy43NmMtLjMyLjMyLS41OC43MS0uNzcsMS4xNWMtLjE4LjQzLS4yNy45MS0uMjcsMS40M3MuMDkuOTkuMjcsMS40M2MuMTkuNDQuNDUuODMuNzcsMS4xNmMuMzMuMzIuNzIuNTgsMS4xNy43NmMuNDUuMTcuOTQuMjYsMS40Ni4yNloiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEwIiBkPSJNMTExLjc4LDc2LjA3di0zLjI0bC4yMS41Ny0zLjctNi4wNmguOThsMy4yNSw1LjMyaC0uNTJsMy4yNS01LjMyaC45MmwtMy43LDYuMDYuMjEtLjU3djMuMjRoLS45MVoiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEwIiBkPSJNMTAxLjU0LDcxLjI1aDQuNjF2Ljc5aC00LjYxdi0uNzlaTTEwMS42NCw3NS4yN2g1LjI1di44aC02LjE3di04LjczaDUuOTh2LjhoLTUuMDZ2Ny4xM1oiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEwIiBkPSJNOTAuNTcsNzYuMDd2LTguNzNoMy43N2MuOTcsMCwxLjcyLjIsMi4yNi41OS41NC4zOS44MS45NC44MSwxLjY2LDAsLjQ3LS4xMS44Ny0uMzQsMS4yLS4yMi4zMi0uNTIuNTctLjkuNzQtLjM3LjE3LS43OS4yNS0xLjIzLjI1bC4yMS0uM2MuNTYsMCwxLjAzLjA5LDEuNDMuMjYuNDEuMTcuNzIuNDIuOTUuNzYuMjIuMzMuMzQuNzUuMzQsMS4yNSwwLC43NC0uMjcsMS4zMS0uODIsMS43Mi0uNTQuNDEtMS4zNi42MS0yLjQ2LjYxaC00LjAxWk05MS40OSw3NS4zMWgzLjA4Yy43NiwwLDEuMzUtLjEzLDEuNzYtLjM5LjQxLS4yNy42MS0uNjkuNjEtMS4yNnMtLjItLjk4LS42MS0xLjIzYy0uNDEtLjI3LS45OS0uNC0xLjc2LS40aC0zLjE4di0uNzZoMi44OGMuNywwLDEuMjQtLjEzLDEuNjItLjQuMzktLjI3LjU5LS42Ni41OS0xLjE4cy0uMi0uOTMtLjU5LTEuMThjLS4zOC0uMjctLjkyLS40LTEuNjItLjRoLTIuNzh2Ny4yMVoiLz4KPC9zdmc+">
+  <div class="hbadge">ASISTENTE IA · NETWORKING</div>
+</header>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loadingText">ANALIZANDO PERFILES...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="container">
+
+  <!-- SCREEN 1 -->
+  <div class="screen active" id="screenWelcome">
+    <div class="wc">
+      <div>
+        <div class="eyebrow">C12 HUB 2026 · BEYOND FACES</div>
+        <h1 class="wtitle">Tu asistente<br><em>C12</em></h1>
+      </div>
+      <p class="wbody">Encuentra a los participantes más relevantes para ti en menos de 2 minutos — basado en tus retos reales, no en títulos de puesto.</p>
+      <div class="code-card">
+        <div class="cc-title">Ingresa tu código de acceso</div>
+        <div class="cc-hint">Lo encontrarás en el correo de bienvenida que te enviamos. Son 6 caracteres.</div>
+        <div>
+          <div class="code-row">
+            <input type="text" class="code-input" id="codeInput" placeholder="XXXXXX" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <button class="btn-go" onclick="handleCode()">ENTRAR →</button>
+          </div>
+          <div id="codeError" class="err" style="display:none">Código no encontrado. Revisa tu correo de bienvenida.</div>
+        </div>
+        <div class="demo-sec">
+          <div class="demo-hint">¿Quieres ver una demo? Usa uno de estos códigos:</div>
+          <div class="demo-codes">
+            <div><button class="dc-btn" onclick="setDemo('WG0ZD4')">WG0ZD4</button><div class="dc-lbl">Comprador · Retail</div></div>
+            <div><button class="dc-btn" onclick="setDemo('TM9X2K')">TM9X2K</button><div class="dc-lbl">Comprador · Alimentos</div></div>
+            <div><button class="dc-btn" onclick="setDemo('PR4LN8')">PR4LN8</button><div class="dc-lbl">Proveedor · Telemetría</div></div>
+            <div><button class="dc-btn" onclick="setDemo('FL7BC1')">FL7BC1</button><div class="dc-lbl">Proveedor · Software</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2 -->
+  <div class="screen" id="screenChat">
+    <div class="user-bar" id="userBar"></div>
+    <div class="chat-wrap" id="chatWrap"></div>
+    <div class="chat-input-area">
+      <div id="quickReplies" class="quick-replies"></div>
+      <div class="input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="Escribe tu respuesta..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3 -->
+  <div class="screen" id="screenResults">
+    <div class="user-bar" id="userBar2"></div>
+    <div class="results-header">
+      <div class="rtitle" id="resultsTitle">Tus mejores matches</div>
+      <div class="rsub" id="resultsSub"></div>
+      <div class="search-tabs" id="searchTabs"></div>
+    </div>
+    <div class="results-list" id="resultsList"></div>
+  </div>
+
+</div>
+<script>
+const COMPRADORES=[
+  {code:"WG0ZD4",empresa:"Walmart",cargo:"Director Supply Chain and Last Mile",industria:"Retail",comunidad:"Intralogística"},
+  {code:"TM9X2K",empresa:"Jumex",cargo:"Gerente de Transporte",industria:"Alimentos y Bebidas",comunidad:"Movilidad"},
+  {code:"BN3RS7",empresa:"Yves Rocher",cargo:"Director de Operaciones",industria:"Cosméticos / Belleza",comunidad:"Intralogística"},
+  {code:"KP8VH2",empresa:"Sally Beauty",cargo:"Gerente de Operaciones CEDIS",industria:"Cosméticos / Belleza",comunidad:"Intralogística"},
+  {code:"QZ5MT1",empresa:"Nissan",cargo:"Logistic Manager",industria:"Automotriz",comunidad:"Intralogística"},
+  {code:"YD4LC9",empresa:"Mitsubishi",cargo:"Gerente de Transporte",industria:"Automotriz",comunidad:"Movilidad"},
+  {code:"HJ7WN3",empresa:"Siemens",cargo:"Supply Chain Manager",industria:"Manufactura",comunidad:"Intralogística"},
+  {code:"XR2PF6",empresa:"Coppel",cargo:"Supply Chain Director",industria:"Retail",comunidad:"Intralogística"},
+  {code:"CV1TK8",empresa:"Bimbo",cargo:"Global Supply Chain Director",industria:"Alimentos y Bebidas",comunidad:"Intralogística"},
+  {code:"MG6BZ4",empresa:"Liverpool",cargo:"Subdirectora de Logística",industria:"Retail",comunidad:"Intralogística"},
+  {code:"NQ3HY7",empresa:"Alpura",cargo:"Supply Chain Director",industria:"Alimentos y Bebidas",comunidad:"Intralogística"},
+  {code:"DW9JX5",empresa:"La Costeña",cargo:"Director de Logística",industria:"Alimentos y Bebidas",comunidad:"Intralogística"},
+  {code:"RP4KS2",empresa:"Nestle",cargo:"Director de Logística",industria:"Alimentos y Bebidas",comunidad:"Intralogística"},
+  {code:"ZT8LM1",empresa:"Kimberly Clark",cargo:"Gerente Compras Logísticas",industria:"Consumo",comunidad:"Movilidad"},
+  {code:"FU6VN9",empresa:"P&G",cargo:"Director de Transporte",industria:"Consumo",comunidad:"Movilidad"},
+  {code:"AE2WQ7",empresa:"P&G",cargo:"Director de Logística",industria:"Consumo",comunidad:"Intralogística"},
+  {code:"SB5GH3",empresa:"Toyota",cargo:"Supply Chain Director",industria:"Automotriz",comunidad:"Intralogística"},
+  {code:"LC0DR8",empresa:"General Motors",cargo:"Director de Operaciones y Logística de Almacén",industria:"Automotriz",comunidad:"Intralogística"},
+  {code:"OY7FT4",empresa:"Volkswagen",cargo:"Head of Logistic Planning",industria:"Automotriz",comunidad:"Intralogística"},
+  {code:"IX3NB6",empresa:"PISA Farmacéutica",cargo:"Director de Logística",industria:"Farmacéutica",comunidad:"Intralogística"},
+  {code:"WK1MZ9",empresa:"Danone",cargo:"Regional Supply Chain Manager",industria:"Alimentos y Bebidas",comunidad:"Intralogística"},
+  {code:"GH4PC2",empresa:"HEB",cargo:"Director de Logística",industria:"Retail",comunidad:"Intralogística"},
+  {code:"TN8YQ5",empresa:"PepsiCo",cargo:"Logistics Planning LATAM/Europe",industria:"Alimentos y Bebidas",comunidad:"Intralogística"},
+  {code:"VE6JL0",empresa:"Natura",cargo:"Head Supply Chain",industria:"Cosméticos / Belleza",comunidad:"Intralogística"},
+  {code:"BM2KX7",empresa:"Abbott Laboratories",cargo:"Director de Logística",industria:"Farmacéutica",comunidad:"Intralogística"},
+  {code:"QF9RS3",empresa:"Mercado Libre",cargo:"Director Última Milla",industria:"E-commerce",comunidad:"Movilidad"},
+  {code:"LU5HW1",empresa:"Adidas",cargo:"Director de Transporte",industria:"Textil",comunidad:"Movilidad"},
+  {code:"ZD3GT8",empresa:"Bodega Aurrera",cargo:"Sub Director de Operaciones",industria:"Retail",comunidad:"Intralogística"},
+  {code:"PJ7CV4",empresa:"Farmacia del Ahorro",cargo:"Director de Logística y Distribución",industria:"Retail",comunidad:"Movilidad"},
+  {code:"RX0NM6",empresa:"OXXO",cargo:"Gerente de Operaciones CEDIS",industria:"Retail",comunidad:"Intralogística"},
+];
+const PROVEEDORES=[
+  {code:"PR4LN8",empresa:"Tecnomotum",cargo:"Gerente Comercial",industria:"Transporte",solucion:"Telemetría avanzada para flotas",comunidad:"Proveedor"},
+  {code:"FL7BC1",empresa:"Infor",cargo:"Director Comercial",industria:"Logística",solucion:"Software para cadena de suministro (WMS/ERP)",comunidad:"Proveedor"},
+  {code:"KS2YH9",empresa:"Idealease",cargo:"Director Comercial",industria:"Transporte",solucion:"Arrendamiento de unidades de transporte",comunidad:"Proveedor"},
+  {code:"WT5MJ3",empresa:"Frotcom",cargo:"Gerente Comercial",industria:"Transporte",solucion:"Telemetría y gestión de flotas",comunidad:"Proveedor"},
+  {code:"DV8QP6",empresa:"Armonmex",cargo:"Director",industria:"Logística",solucion:"Venta y arrendamiento de montacargas y patines industriales",comunidad:"Proveedor"},
+  {code:"NR1FZ4",empresa:"FMP Racks",cargo:"Director",industria:"Logística",solucion:"Fabricación de racks industriales",comunidad:"Proveedor"},
+  {code:"GE6XK7",empresa:"Commerzcargo",cargo:"Gerente",industria:"Transporte",solucion:"Servicios de transporte y última milla",comunidad:"Proveedor"},
+  {code:"CB3TW2",empresa:"Supertrack",cargo:"Director",industria:"Transporte",solucion:"Transporte terrestre",comunidad:"Proveedor"},
+  {code:"MH9BL5",empresa:"Sodisa",cargo:"Director",industria:"Logística",solucion:"Almacenaje y distribución nacional",comunidad:"Proveedor"},
+  {code:"JQ4VS8",empresa:"Happy Mile",cargo:"Director",industria:"Logística",solucion:"Servicios de paquetería y última milla",comunidad:"Proveedor"},
+  {code:"XA7NC0",empresa:"Samsara",cargo:"Director",industria:"Transporte",solucion:"Telemetría y monitoreo en tiempo real",comunidad:"Proveedor"},
+  {code:"UY2PD6",empresa:"Chainway",cargo:"Director",industria:"Logística",solucion:"Identificación automática y captura de datos (RFID, handhelds)",comunidad:"Proveedor"},
+  {code:"OL5HG3",empresa:"Carrier Transcol",cargo:"Director",industria:"Transporte",solucion:"Transporte y almacenaje en cadena de frío",comunidad:"Proveedor"},
+  {code:"RB8WM1",empresa:"Listech",cargo:"Director",industria:"Transporte",solucion:"TMS (Transportation Management System)",comunidad:"Proveedor"},
+  {code:"ZN0KJ7",empresa:"Motive",cargo:"Director",industria:"Transporte",solucion:"Plataforma integral de seguridad y gestión de flotas con IA",comunidad:"Proveedor"},
+  {code:"EF3QT9",empresa:"Cargobot",cargo:"Director",industria:"Logística",solucion:"Plataforma para gestión de envíos terrestres",comunidad:"Proveedor"},
+  {code:"IW6YR4",empresa:"Frazier",cargo:"Director",industria:"Logística",solucion:"Racks industriales de alta resistencia",comunidad:"Proveedor"},
+  {code:"PK1LX8",empresa:"Tyrsa Consorcio",cargo:"Director",industria:"Logística",solucion:"Fabricación e integración de sistemas para almacenamiento y manejo de materiales",comunidad:"Proveedor"},
+  {code:"TG5BN2",empresa:"Edenred",cargo:"Gerente",industria:"Transporte",solucion:"Tarjetas de control de gastos y combustible",comunidad:"Proveedor"},
+  {code:"HV9JC6",empresa:"Detecta Security",cargo:"Gerente",industria:"Transporte",solucion:"Custodia de transporte y rastreo satelital",comunidad:"Proveedor"},
+  {code:"AS2MF0",empresa:"Logicbus",cargo:"Director",industria:"Logística",solucion:"Equipos de automatización de almacén (AMR, AGV, conveyors)",comunidad:"Proveedor"},
+  {code:"YC7WP5",empresa:"Grupo Esscalo",cargo:"Director",industria:"Logística",solucion:"Seguros de mercancía en tránsito",comunidad:"Proveedor"},
+  {code:"LQ4HS3",empresa:"Driving",cargo:"Director",industria:"Transporte",solucion:"Software de gestión de transporte",comunidad:"Proveedor"},
+  {code:"MN8DT7",empresa:"Entorno Industrial",cargo:"Director",industria:"Logística",solucion:"Mantenimiento y servicios industriales para almacenes",comunidad:"Proveedor"},
+  {code:"BO6KZ1",empresa:"Webfleet",cargo:"Gerente",industria:"Transporte",solucion:"Telemetría y optimización de flotas",comunidad:"Proveedor"},
+  {code:"FD3XR9",empresa:"Grupo 4PL",cargo:"Director",industria:"Logística",solucion:"Servicios de operación logística 3PL y 4PL",comunidad:"Proveedor"},
+  {code:"CI0NW4",empresa:"Numaris",cargo:"Gerente",industria:"Transporte",solucion:"Administración de flota y telemetría",comunidad:"Proveedor"},
+  {code:"VT5GJ8",empresa:"XCF",cargo:"Director",industria:"Logística",solucion:"Servicios logísticos y aduanales",comunidad:"Proveedor"},
+  {code:"RP2YL6",empresa:"Intermerk",cargo:"Director",industria:"Logística",solucion:"Almacenaje y distribución",comunidad:"Proveedor"},
+  {code:"KE7BV0",empresa:"Grupo CICE",cargo:"Director",industria:"Logística",solucion:"Transporte terrestre, almacenaje e infraestructura portuaria",comunidad:"Proveedor"},
+];
+const ALL=[...COMPRADORES,...PROVEEDORES];
+let cu=null,hist=[],step=0,typing=false,savedSearches=[],activeSearch=0;
+
+function find(c){return ALL.find(p=>p.code===c.trim().toUpperCase().replace(/\s/g,''))}
+function setDemo(c){document.getElementById('codeInput').value=c;document.getElementById('codeError').style.display='none'}
+function handleCode(){
+  const c=document.getElementById('codeInput').value;
+  const p=find(c);
+  if(!p){document.getElementById('codeError').style.display='block';return}
+  document.getElementById('codeError').style.display='none';
+  cu=p; savedSearches=[]; activeSearch=0; startChat();
+}
+document.getElementById('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleCode()});
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function inits(e){return e.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+function renderBar(id){
+  const isC=cu.comunidad!=='Proveedor';
+  document.getElementById(id).innerHTML=`
+    <div class="uavatar">${inits(cu.empresa)}</div>
+    <div class="uinfo"><div class="uname">${cu.cargo}</div><div class="umeta">${cu.empresa} · ${cu.industria||''}</div></div>
+    <div class="rbadge ${isC?'rc':'rp'}">${isC?'COMPRADOR':'PROVEEDOR'}</div>`;
+}
+function addMsg(role,html,delay=0){
+  return new Promise(r=>setTimeout(()=>{
+    const w=document.getElementById('chatWrap'),isAI=role==='ai';
+    const d=document.createElement('div');d.className=`msg ${isAI?'':'user'}`;
+    d.innerHTML=`<div class="mavatar ${isAI?'ai':'me'}">${isAI?'IA':inits(cu.empresa)}</div><div class="bubble ${isAI?'ai':'user'}">${html}</div>`;
+    w.appendChild(d);w.scrollTop=w.scrollHeight;r();
+  },delay));
+}
+function showTyping(){
+  const w=document.getElementById('chatWrap'),d=document.createElement('div');
+  d.className='msg';d.id='tdot';
+  d.innerHTML=`<div class="mavatar ai">IA</div><div class="bubble ai"><div class="tdots"><span></span><span></span><span></span></div></div>`;
+  w.appendChild(d);w.scrollTop=w.scrollHeight;
+}
+function rmTyping(){const t=document.getElementById('tdot');if(t)t.remove()}
+function setQR(opts){
+  const qr=document.getElementById('quickReplies');qr.innerHTML='';
+  opts.forEach(o=>{const b=document.createElement('button');b.className='qr';b.textContent=o;b.onclick=()=>{document.getElementById('chatInput').value=o;sendMessage()};qr.appendChild(b)});
+}
+function clearQR(){document.getElementById('quickReplies').innerHTML=''}
+function showLoad(t='ANALIZANDO...'){document.getElementById('loadingText').textContent=t;document.getElementById('loadingOverlay').classList.add('active')}
+function hideLoad(){document.getElementById('loadingOverlay').classList.remove('active')}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+
+async function startChat(){
+  showScreen('screenChat');renderBar('userBar');
+  hist=[];step=0;document.getElementById('chatWrap').innerHTML='';clearQR();
+  const isC=cu.comunidad!=='Proveedor';
+  await addMsg('ai',`Hola 👋 Soy tu <strong>Asistente C12 HUB 2026</strong>.`,300);
+  if(isC){
+    const intro = cu.perfil
+      ? `Veo que eres <strong>${cu.cargo} de ${cu.empresa}</strong> — ya tengo tu perfil operativo. Para afinar tus matches al máximo, cuéntame:`
+      : `Veo que eres de <strong>${cu.empresa}</strong>. Para encontrarte los proveedores más relevantes, necesito conocer tu operación:`;
+    await addMsg('ai', `${intro}<br><br><strong>¿Cómo funciona tu operación logística hoy? Cuéntame qué mueves, cómo lo distribuyes y qué tan grande es tu operación.</strong>`, 1200);
+  } else {
+    const intro = cu.web_insight
+      ? `Representas a <strong>${cu.empresa}</strong> — ya conozco tu propuesta de valor. Para conectarte con los compradores más relevantes:`
+      : `Representas a <strong>${cu.empresa}</strong>. Para conectarte con los compradores ideales en C12 HUB 2026:`;
+    await addMsg('ai', `${intro}<br><br><strong>¿Qué hace exactamente tu solución y qué resultado concreto logra un cliente típico contigo?</strong>`, 1200);
+  }
+}
+
+async function sendMessage(){
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();
+  if(!text||typing)return;
+  inp.value='';inp.style.height='auto';clearQR();typing=true;
+  document.getElementById('sendBtn').disabled=true;
+  await addMsg('user',text);
+  hist.push({role:'user',content:text});step++;
+  showTyping();
+  if(step>=3){
+    setTimeout(async()=>{
+      rmTyping();
+      await addMsg('ai','Perfecto, ya tengo todo lo que necesito. 🔍 Déjame analizar todos los perfiles del evento para encontrarte los matches más relevantes...');
+      setTimeout(()=>runMatch(hist),1200);
+    },1500);
+  } else {
+    setTimeout(async()=>{
+      rmTyping();
+      await askNextQuestion(text,step);
+      // typing and sendBtn are reset inside askNextQuestion's finally block
+    },1400);
+  }
+}
+
+async function askNextQuestion(lastAnswer, currentStep){
+  const isC = cu.comunidad !== 'Proveedor';
+  const ans = lastAnswer.toLowerCase();
+
+  let reaction = '';
+  let question = '';
+
+  if(isC){
+    if(currentStep === 1){
+      // React to their operation description
+      if(ans.includes('flota') || ans.includes('unidad') || ans.includes('camion') || ans.includes('transport')){
+        reaction = 'Entiendo — una operación con flota importante donde la coordinación y costos son clave.';
+      } else if(ans.includes('cedi') || ans.includes('almac') || ans.includes('bodega') || ans.includes('inventario')){
+        reaction = 'Claro, una operación centrada en almacenaje donde la eficiencia interna marca la diferencia.';
+      } else if(ans.includes('import') || ans.includes('export') || ans.includes('aduan') || ans.includes('comercio')){
+        reaction = 'Perfecto, una operación con componente de comercio internacional donde los tiempos y cumplimiento son críticos.';
+      } else if(ans.includes('retail') || ans.includes('tiend') || ans.includes('punto') || ans.includes('distribuci')){
+        reaction = 'Interesante — una red de distribución donde la última milla y la visibilidad son fundamentales.';
+      } else {
+        reaction = 'Gracias por el contexto, ya tengo una idea clara de tu operación.';
+      }
+      question = '<strong>¿Cuál es el problema que más te quita el sueño en tu operación este año?</strong>';
+    } else if(currentStep === 2){
+      // React to their pain point
+      if(ans.includes('visibilidad') || ans.includes('tiempo real') || ans.includes('no sé') || ans.includes('rastreo')){
+        reaction = 'La falta de visibilidad en tiempo real es uno de los retos más comunes y costosos en logística.';
+      } else if(ans.includes('costo') || ans.includes('gasto') || ans.includes('presupuesto') || ans.includes('caro')){
+        reaction = 'La presión en costos es constante — encontrar eficiencias sin sacrificar servicio es el equilibrio difícil.';
+      } else if(ans.includes('tecnolog') || ans.includes('sistema') || ans.includes('software') || ans.includes('digital')){
+        reaction = 'La digitalización de la operación es la palanca más poderosa para resolver múltiples problemas a la vez.';
+      } else if(ans.includes('personal') || ans.includes('gente') || ans.includes('equipo') || ans.includes('conductor')){
+        reaction = 'La gestión del capital humano en logística es un reto que pocas soluciones atacan bien.';
+      } else {
+        reaction = 'Ese es un reto real que varios proveedores en el evento pueden ayudarte a resolver.';
+      }
+      question = '<strong>¿Estás explorando opciones o ya tienes presupuesto definido para tomar una decisión este año?</strong>';
+    }
+  } else {
+    if(currentStep === 1){
+      // React to their solution description
+      if(ans.includes('telemetr') || ans.includes('gps') || ans.includes('flota') || ans.includes('rastreo')){
+        reaction = 'Una solución de visibilidad de flota con alto impacto en costos operativos — muy demandada en el evento.';
+      } else if(ans.includes('wms') || ans.includes('erp') || ans.includes('software') || ans.includes('sistem')){
+        reaction = 'Tecnología para cadena de suministro — hay muchos compradores buscando exactamente eso en C12 HUB.';
+      } else if(ans.includes('transport') || ans.includes('carga') || ans.includes('flete') || ans.includes('distribuci')){
+        reaction = 'Servicios de transporte — uno de los rubros con más demanda entre los compradores del evento.';
+      } else if(ans.includes('almac') || ans.includes('bodega') || ans.includes('rack') || ans.includes('cedi')){
+        reaction = 'Soluciones de intralogística — muy relevantes para los directores de CEDIS que participan en C12 HUB.';
+      } else {
+        reaction = 'Interesante propuesta de valor — hay buenos matches potenciales en el evento.';
+      }
+      question = '<strong>Descríbeme al cliente con el que mejor te ha ido — ¿qué industria, qué tamaño de operación y qué problema tenía?</strong>';
+    } else if(currentStep === 2){
+      // React to their ideal client
+      if(ans.includes('aliment') || ans.includes('bebida') || ans.includes('farmac') || ans.includes('refriger')){
+        reaction = 'Perfecto — hay varios compradores del sector alimentos y farmacéutico en el evento con ese perfil.';
+      } else if(ans.includes('retail') || ans.includes('tiend') || ans.includes('consumo')){
+        reaction = 'Retail y consumo masivo es uno de los grupos más grandes entre los compradores de C12 HUB.';
+      } else if(ans.includes('automotr') || ans.includes('manufactur') || ans.includes('industr')){
+        reaction = 'El sector automotriz y manufactura tiene fuerte presencia en C12 HUB este año.';
+      } else {
+        reaction = 'Buen perfil de cliente — ya tengo lo que necesito para hacer el match.';
+      }
+      question = '<strong>¿Qué te hace diferente de otras opciones similares en el mercado?</strong>';
+    }
+  }
+
+  await addMsg('ai', `${reaction}<br><br>${question}`);
+  typing = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+// ── MATCHES PRECARGADOS POR PERFIL ──────────────────────────
+const PRELOADED_MATCHES = {
+  // COMPRADOR: Walmart
+  'WG0ZD4': [
+    {empresa:'Samsara',solucion:'Plataforma #1 de gestión de flotas con IA',score:96,razon:'Samsara es la plataforma #1 de gestión de flotas (4.6★ en 2,300+ reseñas) y tiene especialización probada en retail y distribución masiva. Su módulo de visibilidad en tiempo real y gestión de última milla resuelve directamente el reto de coordinación entre tus 18 CEDIS y flota tercerizada.',tags:['Flota tercerizada','Última milla','Retail']},
+    {empresa:'Infor',solucion:'ERP y WMS en la nube — Líder Gartner 2025',score:93,razon:'Infor es Líder en el Magic Quadrant Gartner 2025 para ERP cloud (5 años consecutivos) con implementaciones probadas en retail de gran escala. Su WMS con IA generativa está diseñado exactamente para operaciones multi-CEDIS como la tuya, con integración a sistemas de despacho y control de inventario en tiempo real.',tags:['WMS','Multi-CEDIS','IA Generativa']},
+    {empresa:'Logicbus',solucion:'Automatización de almacén: AMR, AGV, conveyors',score:89,razon:'Logicbus especialista en automatización de CEDIS para retail de alto volumen. Sus robots móviles autónomos (AMR) aceleran el picking y despacho sin necesidad de ampliar plantilla — clave cuando manejas volúmenes de e-commerce y tienda física simultáneamente.',tags:['Automatización','E-commerce','CEDIS']},
+    {empresa:'Edenred',solucion:'Control de gastos y combustible para flotas',score:85,razon:'Con flota tercerizada de +500 unidades, Edenred te da visibilidad y control total del gasto de combustible por unidad y transportista. Sus reportes en tiempo real permiten detectar desviaciones y negociar mejores contratos con tus carriers.',tags:['Control de gastos','Flota tercerizada','Combustible']},
+    {empresa:'Carrier Transcol',solucion:'Transporte refrigerado y cadena de frío',score:82,razon:'Para los productos perecederos de Walmart, Carrier Transcol ofrece flota refrigerada propia con monitoreo de temperatura en tiempo real y cumplimiento normativo. Su cobertura nacional se alinea con tus rutas de distribución.',tags:['Cadena de frío','Perecederos','Cobertura nacional']},
+    {empresa:'Grupo Esscalo',solucion:'Seguros de mercancía en tránsito',score:78,razon:'Con el volumen de mercancía que mueve Walmart diariamente, Grupo Esscalo ofrece cobertura especializada para pérdidas en tránsito con gestión ágil de siniestros — especialmente importante para productos de alto valor.',tags:['Seguros','Gestión de riesgo','Alto volumen']},
+  ],
+  // COMPRADOR: Bimbo
+  'CV1TK8': [
+    {empresa:'Samsara',solucion:'Plataforma de gestión de flotas y seguridad con IA',score:97,razon:'Samsara tiene especialización comprobada en empresas de alimentos y bebidas con flotas de distribución masiva. Su combinación de GPS en tiempo real, análisis de conducción y alertas en cabina es exactamente lo que necesita una flota de 1,000+ unidades para reducir costos y accidentes.',tags:['Flota propia','Alimentos','Seguridad vial']},
+    {empresa:'Infor',solucion:'ERP y WMS con IA generativa',score:91,razon:'Infor ya trabaja con Grupo Peñafiel en México para optimización de producción y distribución de alimentos. Su plataforma en la nube maneja operaciones de manufactura y distribución de la complejidad de Bimbo, con visibilidad end-to-end de la cadena de suministro.',tags:['Alimentos','Manufactura','ERP cloud']},
+    {empresa:'Edenred',solucion:'Tarjetas de control de gastos y combustible',score:88,razon:'Para una flota de 1,000+ unidades, Edenred puede representar ahorros significativos en combustible con control granular por unidad y conductor. Sus reportes permiten identificar rutas ineficientes y comportamientos de alto consumo.',tags:['Combustible','Flota grande','Ahorro operativo']},
+    {empresa:'Carrier Transcol',solucion:'Almacenaje y transporte en cadena de frío',score:84,razon:'Algunos productos Bimbo requieren temperatura controlada. Carrier Transcol ofrece infraestructura de cadena de frío con monitoreo continuo y cumplimiento de normas de inocuidad alimentaria.',tags:['Cadena de frío','Inocuidad','Alimentos']},
+    {empresa:'Logicbus',solucion:'Automatización de almacén y CEDIS',score:80,razon:'Con 30+ CEDIS nacionales, Logicbus puede implementar soluciones de automatización modular que mejoran velocidad de despacho y reducen errores de picking — sin necesidad de detener operaciones.',tags:['30+ CEDIS','Automatización','Despacho']},
+  ],
+  // COMPRADOR: PISA Farmacéutica
+  'IX3NB6': [
+    {empresa:'Rogil Worldwide',solucion:'Operador logístico internacional especialista en farmacéuticos',score:97,razon:'Rogil Worldwide tiene especialización crítica en productos farmacéuticos con cumplimiento de cadena de custodia y regulación COFEPRIS. Su servicio integral de importación + aduanas + almacenaje elimina la fricción de coordinar múltiples proveedores para tus materias primas.',tags:['Farmacéutica','COFEPRIS','Importaciones']},
+    {empresa:'Carrier Transcol',solucion:'Cadena de frío para farmacéuticos y perecederos',score:94,razon:'Los productos farmacéuticos de PISA requieren temperatura controlada con trazabilidad total. Carrier Transcol tiene infraestructura de cadena de frío con monitoreo continuo y documentación de cumplimiento GDP — indispensable para tu operación.',tags:['Cadena de frío','GDP','Trazabilidad']},
+    {empresa:'Infor',solucion:'WMS y ERP con trazabilidad para farmacéutica',score:90,razon:'Infor tiene soluciones específicas para la industria farmacéutica con trazabilidad de lote, control de caducidades y cumplimiento regulatorio. Su WMS garantiza la integridad del inventario que COFEPRIS requiere en cada movimiento.',tags:['Trazabilidad','Lotes','Regulatorio']},
+    {empresa:'Grupo Esscalo',solucion:'Seguros especializados para carga farmacéutica',score:85,razon:'Los productos farmacéuticos tienen alto valor y regulación estricta en caso de siniestro. Grupo Esscalo ofrece cobertura especializada que contempla las condiciones de almacenaje y transporte específicas del sector.',tags:['Seguros','Alto valor','Farmacéutica']},
+    {empresa:'Rogil Worldwide',solucion:'Aduanas y comercio exterior',score:82,razon:'Las importaciones de materias primas farmacéuticas tienen trámites aduanales complejos. Rogil gestiona el proceso completo con agentes certificados y experiencia en permisos de importación de productos regulados.',tags:['Aduanas','Importaciones','Materias primas']},
+  ],
+  // COMPRADOR: Mercado Libre
+  'QF9RS3': [
+    {empresa:'Samsara',solucion:'Gestión de flotas y última milla con IA',score:96,razon:'Samsara es la solución #1 para operaciones de e-commerce con alta densidad de entregas. Su módulo de ruteo inteligente y despacho en tiempo real está diseñado para los volúmenes de 200,000+ envíos diarios, con visibilidad cliente-a-cliente de cada paquete.',tags:['E-commerce','Última milla','200k+ envíos']},
+    {empresa:'Commerzcargo',solucion:'Servicios de transporte y última milla',score:91,razon:'Commerzcargo tiene experiencia en operaciones de última milla para e-commerce en zonas urbanas y suburbanas de México. Su red de puntos de entrega y modelo flexible se adapta a los picos de demanda de Mercado Libre.',tags:['Última milla','Zonas urbanas','Flexibilidad']},
+    {empresa:'Happy Mile',solucion:'Paquetería y última milla',score:88,razon:'Happy Mile especialista en entregas de paquetería con trazabilidad en tiempo real y opciones de entrega flexible. Su modelo operativo reduce el costo por entrega en las ciudades donde Mercado Libre tiene mayor densidad.',tags:['Paquetería','Trazabilidad','Costo por entrega']},
+    {empresa:'Infor',solucion:'WMS para e-commerce y fulfillment',score:85,razon:'Para la operación de fulfillment de Mercado Libre, Infor ofrece WMS optimizado para alta rotación y multiples SKUs con automatización de oleadas de picking y despacho express.',tags:['Fulfillment','WMS','Alta rotación']},
+    {empresa:'Edenred',solucion:'Control de gastos para conductores y operadores',score:80,razon:'Con una flota mixta de cientos de repartidores, Edenred controla gastos de combustible y viáticos con tarjetas digitales y reportes en tiempo real — reduciendo fraude y simplificando la administración.',tags:['Gastos','Repartidores','Control']},
+  ],
+  // PROVEEDOR: Infor
+  'FL7BC1': [
+    {empresa:'Walmart',cargo:'Director Supply Chain and Last Mile',industria:'Retail',score:96,razon:'Walmart opera 18 CEDIS propios y necesita visibilidad de inventario en tiempo real — exactamente el problema que Infor WMS resuelve. Con 60,000+ clientes globales y Grupo Peñafiel como referencia en México, Infor tiene la credibilidad para una empresa de esta escala.',tags:['Multi-CEDIS','Retail','WMS']},
+    {empresa:'Bimbo',cargo:'Global Supply Chain Director',industria:'Alimentos y Bebidas',score:94,razon:'Bimbo tiene 30+ CEDIS y una cadena de suministro global de altísima complejidad. Infor ya implementó optimización de producción para Grupo Peñafiel en México — una referencia directa del sector alimentos que abre la conversación.',tags:['Alimentos','Global','ERP']},
+    {empresa:'PepsiCo',cargo:'Logistics Planning LATAM/Europe',industria:'Alimentos y Bebidas',score:92,razon:'PepsiCo requiere planeación logística para LATAM y Europa — el alcance exacto donde Infor tiene fortaleza con su plataforma en la nube específica por industria de alimentos y bebidas.',tags:['LATAM','Planeación','Alimentos']},
+    {empresa:'General Motors',cargo:'Director de Operaciones y Logística de Almacén',industria:'Automotriz',score:90,razon:'GM gestiona partes y componentes en almacén con alta complejidad. Infor tiene soluciones específicas para la industria automotriz con WMS optimizado para just-in-time y trazabilidad de partes.',tags:['Automotriz','JIT','Almacén']},
+    {empresa:'Liverpool',cargo:'Subdirectora de Logística',industria:'Retail',score:87,razon:'Liverpool opera en omnicanal con CEDIS propios. Infor WMS maneja exactamente la complejidad de retail omnicanal con gestión de devoluciones y fulfillment para e-commerce y tiendas físicas.',tags:['Omnicanal','Retail','Devoluciones']},
+    {empresa:'PISA Farmacéutica',cargo:'Director de Logística',industria:'Farmacéutica',score:85,razon:'PISA requiere trazabilidad completa y cumplimiento COFEPRIS. Infor tiene módulos farmacéuticos con control de lotes, caducidades y documentación regulatoria — una propuesta diferenciada para este sector.',tags:['Farmacéutica','Trazabilidad','COFEPRIS']},
+  ],
+  // PROVEEDOR: Samsara
+  'XA7NC0': [
+    {empresa:'Bimbo',cargo:'Global Supply Chain Director',industria:'Alimentos y Bebidas',score:97,razon:'Bimbo opera 1,000+ unidades propias distribuyendo alimentos en toda México. Samsara es la plataforma #1 para flotas de esta escala — su combinación de GPS, análisis de conducción e IA de seguridad reduce accidentes y combustible significativamente.',tags:['Flota 1000+','Alimentos','Seguridad']},
+    {empresa:'Mercado Libre',cargo:'Director Última Milla',industria:'E-commerce',score:95,razon:'200,000+ entregas diarias necesitan visibilidad en tiempo real y ruteo inteligente. Samsara tiene el módulo de última milla más robusto del mercado con trazabilidad cliente-a-cliente y optimización dinámica de rutas.',tags:['Última milla','E-commerce','200k+ envíos']},
+    {empresa:'Walmart',cargo:'Director Supply Chain and Last Mile',industria:'Retail',score:93,razon:'Walmart terceriza +500 unidades y necesita visibilidad de sus carriers. Samsara tiene APIs abiertas que se integran con sistemas de transportistas terceros dando visibilidad unificada sin importar quién opera.',tags:['Flota tercerizada','Retail','APIs']},
+    {empresa:'P&G',cargo:'Director de Transporte',industria:'Consumo',score:90,razon:'P&G distribuye productos de consumo masivo con flota mixta. Samsara reduce costos de combustible hasta 15-20% con análisis de conducción y alertas preventivas — un ROI que P&G puede calcular antes de la cita.',tags:['Consumo','Combustible','ROI demostrable']},
+    {empresa:'La Costeña',cargo:'Director de Logística',industria:'Alimentos y Bebidas',score:88,razon:'La Costeña distribuye a retail y canal tradicional con flota tercerizada. Samsara da visibilidad en tiempo real de cada entrega y alertas de desviación de ruta — reduciendo mermas y mejorando el servicio al cliente.',tags:['Alimentos','Canal tradicional','Visibilidad']},
+    {empresa:'Kimberly Clark',cargo:'Gerente Compras Logísticas',industria:'Consumo',score:85,razon:'Kimberly Clark evalúa proveedores de gestión de flota. La calculadora de ROI de Samsara permite demostrar el ahorro proyectado antes de la firma — un argumento sólido para el área de compras.',tags:['Compras','ROI','Consumo']},
+  ],
+  // PROVEEDOR: Rogil
+  'RP2YL6': [
+    {empresa:'PISA Farmacéutica',cargo:'Director de Logística',industria:'Farmacéutica',score:97,razon:'PISA importa materias primas farmacéuticas con regulación COFEPRIS estricta. Rogil tiene especialización crítica en productos farmacéuticos con cadena de custodia completa y agentes aduanales certificados — la combinación perfecta para este cliente.',tags:['Farmacéutica','COFEPRIS','Importaciones']},
+    {empresa:'Nissan',cargo:'Logistic Manager',industria:'Automotriz',score:92,razon:'Nissan importa componentes desde Asia y EEUU con tiempos críticos. Rogil opera transporte multimodal con red internacional de agentes acreditados y experiencia en materiales con requerimientos especiales de manejo.',tags:['Automotriz','Importaciones','Multimodal']},
+    {empresa:'Abbott Laboratories',cargo:'Director de Logística',industria:'Farmacéutica',score:91,razon:'Abbott distribuye dispositivos médicos y nutricionales con temperatura controlada e importaciones reguladas. Rogil cubre exactamente este perfil: farmacéuticos + cadena de frío + aduanas bajo un mismo operador.',tags:['Farmacéutica','Cadena de frío','Regulatorio']},
+    {empresa:'General Motors',cargo:'Director de Operaciones y Logística',industria:'Automotriz',score:88,razon:'GM importa partes automotrices con logística compleja. Rogil tiene experiencia en materiales delicados y peligrosos con protocolos especiales — clave para piezas automotrices que requieren manejo controlado.',tags:['Automotriz','Importaciones','Manejo especial']},
+    {empresa:'Adidas',cargo:'Director de Transporte',industria:'Textil',score:85,razon:'Adidas importa calzado y textil desde Asia con logística marítima. Rogil opera transporte marítimo con red de agentes internacionales y servicios aduanales — exactamente el perfil que Adidas necesita para su cadena global.',tags:['Textil','Marítimo','Asia']},
+    {empresa:'Liverpool',cargo:'Subdirectora de Logística',industria:'Retail',score:82,razon:'Liverpool importa moda y electrónica con logística internacional. Rogil puede manejar la importación completa incluyendo almacenaje temporal, empaque y distribución a CEDIS — una solución integral que simplifica la operación.',tags:['Retail','Importaciones','Moda']},
+  ],
+};
+
+async function runMatch(history){
+  showLoad('BUSCANDO TUS MEJORES MATCHES...');
+  const isC = cu.comunidad !== 'Proveedor';
+
+  setTimeout(()=>{
+    hideLoad();
+    // Check if we have preloaded matches for this user
+    if(PRELOADED_MATCHES[cu.code]){
+      showResults(PRELOADED_MATCHES[cu.code], isC);
+    } else {
+      // Generic fallback for codes without preloaded matches
+      const opp = isC ? PROVEEDORES : COMPRADORES;
+      showResults(opp.slice(0,6).map((p,i)=>({
+        empresa:p.empresa,
+        solucion:p.solucion||'',
+        cargo:p.cargo||'',
+        industria:p.industria||'',
+        score:90-(i*3),
+        razon:`${p.empresa} tiene un perfil de operación compatible con los retos que mencionaste durante la conversación.`,
+        tags:['Supply Chain','C12 HUB 2026']
+      })), isC);
+    }
+  }, 1800); // Small delay for realism
+}
+
+function showResults(matches,isC,searchLabel){
+  // Save this search
+  const searchNum = savedSearches.length + 1;
+  const label = searchLabel || `Búsqueda ${searchNum}`;
+  savedSearches.push({ matches: matches.slice(0,20), isC, label });
+  activeSearch = savedSearches.length - 1;
+
+  showScreen('screenResults');
+  renderBar('userBar2');
+  renderTabs();
+  renderSearchResults(activeSearch);
+}
+
+function renderTabs(){
+  const tabs = document.getElementById('searchTabs');
+  tabs.innerHTML = '';
+  savedSearches.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'stab' + (i === activeSearch ? ' active' : '');
+    btn.textContent = s.label;
+    btn.onclick = () => { activeSearch = i; renderTabs(); renderSearchResults(i); };
+    tabs.appendChild(btn);
+  });
+  // Nueva búsqueda button
+  const nbtn = document.createElement('button');
+  nbtn.className = 'stab stab-new';
+  nbtn.textContent = '+ Nueva búsqueda';
+  nbtn.onclick = () => startChat();
+  tabs.appendChild(nbtn);
+}
+
+function renderSearchResults(idx){
+  const {matches, isC, label} = savedSearches[idx];
+  const num = idx + 1;
+  document.getElementById('resultsTitle').textContent = `${matches.length} matches · ${label}`;
+  document.getElementById('resultsSub').textContent = isC
+    ? 'Proveedores seleccionados por compatibilidad con tus retos · C12 HUB 2026'
+    : 'Compradores seleccionados por afinidad con tu solución · C12 HUB 2026';
+
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+
+  // Search context label
+  const lbl = document.createElement('div');
+  lbl.className = 'search-label';
+  lbl.textContent = `Resultados de ${label} — ${isC ? 'Proveedores' : 'Compradores'} recomendados`;
+  list.appendChild(lbl);
+
+  matches.forEach((m, i) => {
+    const c = document.createElement('div');
+    c.className = 'mcard';
+    c.style.animationDelay = `${i * 40}ms`;
+    const sub = isC
+      ? `<div class="mmeta">${m.solucion||''}</div>`
+      : `<div class="mmeta">${m.cargo||''} · ${m.industria||''}</div>`;
+    const tags = (m.tags||[]).map(t=>`<span class="mtag">${t}</span>`).join('');
+    c.innerHTML = `
+      <div class="mhead">
+        <div class="minfo">
+          <div class="mrank">#${i+1} MATCH</div>
+          <div class="mname">${m.empresa}</div>${sub}
+        </div>
+        <div class="mscore">${m.score}<span class="mscore-pct">%</span></div>
+      </div>
+      <div class="mreason">${m.razon}</div>
+      ${tags ? `<div class="mtags">${tags}</div>` : ''}
+      <button class="btn-cita" onclick="reqMtg('${m.empresa.replace(/'/g,"\\'")}')">SOLICITAR CITA EN BRELLA →</button>`;
+    list.appendChild(c);
+  });
+
+  // Nueva búsqueda button at bottom
+  const nbtn = document.createElement('button');
+  nbtn.className = 'btn-new-search';
+  nbtn.innerHTML = '+ Refinar búsqueda con otros criterios';
+  nbtn.onclick = () => startChat();
+  list.appendChild(nbtn);
+}
+
+function reqMtg(e){toast(`✓ Busca a ${e} en Brella para solicitar tu cita`)}
+const ta=document.getElementById('chatInput');
+ta.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'});
+ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});
+</script>
+</body>
+</html>
