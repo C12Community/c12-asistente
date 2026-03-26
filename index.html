@@ -623,7 +623,7 @@ function renderSearchResults(idx){
       </div>
       <div class="mreason">${m.razon}</div>
       ${tags ? `<div class="mtags">${tags}</div>` : ''}
-      <button class="btn-cita" onclick="reqMtg('${m.empresa.replace(/'/g,"\\'")}')">SOLICITAR CITA EN BRELLA →</button>`;
+      <button class="btn-cita" onclick="reqMtg('${m.empresa.replace(/'/g,"\\'")}')">CONECTAR CON ESTE PERFIL →</button>`;
     list.appendChild(c);
   });
 
@@ -635,7 +635,10 @@ function renderSearchResults(idx){
   list.appendChild(nbtn);
 }
 
-function reqMtg(e){toast(`✓ Busca a ${e} en Brella para solicitar tu cita`)}
+function reqMtg(e){
+  window.open('https://c12community.brella.io/events/c12hub2026/people','_blank');
+  toast(`Conectando con ${e} en el evento...`);
+}
 const ta=document.getElementById('chatInput');
 ta.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'});
 ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});
