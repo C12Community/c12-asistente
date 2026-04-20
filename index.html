@@ -547,7 +547,7 @@ const PROVEEDORES=[
   {code:"RP2YL6",empresa:"Intermerk",cargo:"Director",industria:"Logística",solucion:"Almacenaje y distribución",comunidad:"Proveedor"},
   {code:"KE7BV0",empresa:"Grupo CICE",cargo:"Director",industria:"Logística",solucion:"Transporte terrestre, almacenaje e infraestructura portuaria",comunidad:"Proveedor"},
 ];
-const ALL=[...COMPRADORES,...PROVEEDORES];
+const ALL=[...COMPRADORES,...PROVEEDORES,...COMPRADORES_REAL,...PROVEEDORES_REAL];
 let cu=null,hist=[],step=0,typing=false,savedSearches=[],activeSearch=0;
 
 function find(c){return ALL.find(p=>p.code===c.trim().toUpperCase().replace(/\s/g,''))}
