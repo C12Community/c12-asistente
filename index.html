@@ -888,8 +888,8 @@ function renderSearchResults(idx){
 }
 
 function reqMtg(e){
-  window.open('https://c12community.brella.io/events/c12hub2026/people','_blank');
-  toast(`Conectando con ${e} en el evento...`);
+  toast(`Conectando con ${e}...`);
+  setTimeout(()=>{ location.href='https://c12community.brella.io/events/c12hub2026/people'; }, 800);
 }
 const ta=document.getElementById('chatInput');
 ta.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'});
