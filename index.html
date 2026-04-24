@@ -755,19 +755,13 @@ function handleCode(){
   const p=find(c);
   if(!p){document.getElementById('codeError').style.display='block';return}
   document.getElementById('codeError').style.display='none';
-  cu=p; savedSearches=[]; activeSearch=0;
-  clearSession(); // Clear any previous session for new login
-  startChat();
-}
-document.getElementById('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleCode()});
+  cu=p;
 
-// ── RESTORE SESSION ON LOAD ──────────────────────────────────
-window.addEventListener('load', ()=>{
-  if(loadSession()){
-    // Restore previous session — show results directly
+  // Check if there's a saved session for this user
+  const session = loadSession();
+  if(session && cu.code === p.code && savedSearches.length > 0){
     renderBar('userBar');
     showScreen('screenResults');
-    // Re-render the last active search
     const s = savedSearches[activeSearch];
     if(s){
       const isC = cu.comunidad === 'Buyer';
@@ -779,11 +773,24 @@ window.addEventListener('load', ()=>{
       list.innerHTML = '';
       const lbl = document.createElement('div');
       lbl.className = 'search-label';
-      lbl.innerHTML = `✨ Tus matches anteriores están guardados — <a href="#" onclick="clearSession();showScreen('screenWelcome');return false;" style="color:var(--teal)">empezar nueva sesión</a>`;
+      lbl.innerHTML = `✨ Tus matches anteriores están aquí — <a href="#" onclick="clearSession();savedSearches=[];startChat();return false;" style="color:var(--teal)">hacer nueva búsqueda</a>`;
       list.appendChild(lbl);
       showResults(s.matches, isC, s.label);
     }
+    return;
   }
+
+  // No session — start fresh
+  clearSession();
+  savedSearches=[]; activeSearch=0;
+  startChat();
+}
+document.getElementById('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleCode()});
+
+// ── RESTORE SESSION ON LOAD ──────────────────────────────────
+window.addEventListener('load', ()=>{
+  // Always show welcome screen — session only restores after code entry
+  showScreen('screenWelcome');
 });
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
