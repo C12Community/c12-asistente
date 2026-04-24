@@ -1083,24 +1083,40 @@ async function runMatch(history){
     ? `Eres el motor de matchmaking de C12 HUB 2026.
 El usuario es COMPRADOR (Buyer): ${cu.cargo} de ${cu.empresa}.
 Basado en la conversación, selecciona los proveedores más compatibles. Máximo 15, mínimo 5.
-PROVEEDORES DISPONIBLES:
+
+REGLA CRÍTICA: SOLO puedes recomendar empresas de esta lista. NUNCA inventes empresas, NUNCA uses empresas que no estén aquí. Si el nombre no está en la lista, no lo incluyas.
+
+PROVEEDORES REGISTRADOS EN EL EVENTO (ÚNICOS VÁLIDOS):
 ${opp.map((p,i)=>`${i+1}. ${p.empresa} | ${p.solucion||'sin perfil'}${p.web?' | '+p.web:''}`).join('\n')}
-Responde SOLO en JSON sin markdown: {"matches":[{"empresa":"nombre","solucion":"solución","score":92,"razon":"2-3 oraciones específicas y concretas","tags":["tag1","tag2"]}]}
+
+Responde SOLO en JSON sin markdown usando EXACTAMENTE los nombres de empresa de la lista: {"matches":[{"empresa":"nombre exacto de la lista","solucion":"solución","score":92,"razon":"2-3 oraciones específicas y concretas","tags":["tag1","tag2"]}]}
 Las razones deben ser específicas basadas en la conversación.`
     : `Eres el motor de matchmaking de C12 HUB 2026.
 El usuario es PROVEEDOR: ${cu.cargo} de ${cu.empresa} (${cu.comunidad}). Solución: ${cu.solucion||'por definir en conversación'}.
 Basado en la conversación, selecciona los compradores más compatibles. Máximo 15, mínimo 5.
-COMPRADORES DISPONIBLES:
+
+REGLA CRÍTICA: SOLO puedes recomendar empresas de esta lista. NUNCA inventes empresas, NUNCA uses empresas que no estén aquí. Si el nombre no está en la lista, no lo incluyas.
+
+COMPRADORES REGISTRADOS EN EL EVENTO (ÚNICOS VÁLIDOS):
 ${opp.map((p,i)=>`${i+1}. ${p.empresa} | ${p.cargo} | ${p.reto||'sin perfil'}`).join('\n')}
-Responde SOLO en JSON sin markdown: {"matches":[{"empresa":"nombre","cargo":"cargo","score":91,"razon":"2-3 oraciones específicas y concretas","tags":["tag1","tag2"]}]}`;
+
+Responde SOLO en JSON sin markdown usando EXACTAMENTE los nombres de empresa de la lista: {"matches":[{"empresa":"nombre exacto de la lista","cargo":"cargo","score":91,"razon":"2-3 oraciones específicas y concretas","tags":["tag1","tag2"]}]}`;
 
   const conversacion = history.map(m=>`${m.role==='user'?'Usuario':'Luna'}: ${m.content}`).join('\n');
 
   try {
     const raw = await callClaude(sys, `Conversación:\n${conversacion}\n\nGenera los matches. Solo JSON.`, 2000);
     const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    
+    // Filter: only show companies that are actually in our list
+    const oppNames = opp.map(p => p.empresa.toLowerCase().trim());
+    const validMatches = (result.matches || result).filter(m => {
+      const name = (m.empresa||'').toLowerCase().trim();
+      return oppNames.some(n => n.includes(name) || name.includes(n));
+    });
+    
     hideLoad();
-    showResults(result.matches || result, isC);
+    showResults(validMatches.length > 0 ? validMatches : (result.matches || result), isC);
   } catch(e){
     hideLoad();
     showResults(opp.slice(0,6).map((p,i)=>({
