@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <script>
 // Force reload if cached version is outdated
-const LUNA_VERSION = '20260506';
+const LUNA_VERSION = '20260507';
 const cached = localStorage.getItem('luna_version');
 if(cached && cached !== LUNA_VERSION){
   localStorage.setItem('luna_version', LUNA_VERSION);
@@ -17,7 +17,7 @@ if(cached && cached !== LUNA_VERSION){
   localStorage.setItem('luna_version', LUNA_VERSION);
 }
 </script>
-<title>Luna · C12 HUB 2026 · v20260506</title>
+<title>Luna · C12 HUB 2026 · v20260507</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Sans:ital,wght@1,400&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -426,11 +426,13 @@ const PROVEEDORES_REAL=[
   {code:'TZD1TF',empresa:'SAMSARA',nombre:'Oscar Gutierrez Pulido',cargo:'Gerente Ventas Enterprise',comunidad:'Sponsor 15X',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'X1R2DR',empresa:'Crossmotion Logistics',nombre:'Pablo Guzmán',cargo:'Commercial Director',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'POK20S',empresa:'SPARX',nombre:'RICARDO ANTONIO ESPINOSA REYES',cargo:'Sales Manager México',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
+  {code:'PUDDNI',empresa:'LEMAN',nombre:'Gerardo Bonilla',cargo:'Business development executive',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'U9GZMD',empresa:'INTERLOG',nombre:'GERARDO  BELTRAN VALLE',cargo:'CEO/FOUNDER',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'HHC6PY',empresa:'IMVER REMOLQUES',nombre:'Jesus Antonio Hidalgo',cargo:'Director General',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'ZDUSNZ',empresa:'BPG',nombre:'TIMUR  GEZIKOV',cargo:'Team leader MX',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'WDVFDK',empresa:'FLEX RENTING',nombre:'AYLIN ZAPIEN MORIEL',cargo:'Ejecutiva comercial Cancún',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
   {code:'QD20MX',empresa:'SANTA FE DE GUANAJUATO EXPRESS',nombre:'BENJAMIN BARRERA MUNOZ',cargo:'Director',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
+  {code:'DZPOXS',empresa:'GRUPO ANDRADE',nombre:'JUAN CARLOS ROMERO',cargo:'DIRECTOR',comunidad:'Business',etiqueta:'PROVEEDOR',tiene_perfil:'false'},
 ];
 const COMPRADORES_REAL=[
   {code:'P2HDNW',empresa:'Jugos del valle Santa Clara',nombre:'Aldahir Dotor nuñez',cargo:'Grouper mánager Logística',comunidad:'Buyer',etiqueta:'COMPRADOR',reto:'Terminar los proyectos de la planta más grande del sistema coca cola',operacion:'Un poco de ambos',almacenes:'Tercerizo una parte y tengo propios',flota:'Tengo flota propia y tercerizo / rento una parte',tipo_flota:'Transporte pesado, Última milla, Media milla, Flota utiliaria',num_unidades:'De 501 a 1,000 uds.',transporte:'Transporte terrestre, Transporte marítimo, Transporte Intermodal (Ferroviario)',volumen:'Más de 50 TON',web:'https://jugosdelvalle.com.mx/',tiene_perfil:'true'},
@@ -665,6 +667,7 @@ const COMPRADORES_REAL=[
   {code:'ZGLCMU',empresa:'GEA GROUP',nombre:'Juan Carlos Torres',cargo:'LOGISTICS MANAGER MIDDLE AMERICAS',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
   {code:'YVXPO0',empresa:'SENOPLAST',nombre:'Erjona Daka',cargo:'GERENTE DE LOGISTICA Y COMERCIO EXTERIOR',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
   {code:'THOCOR',empresa:'ITALIKA',nombre:'Carlos  Mendoza Macchetto',cargo:'DIRECTOR DE CADENA DE SUMINISTRO',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
+  {code:'TWGCWI',empresa:'RECKITT',nombre:'Braulio Montoya',cargo:'DIRECTOR DE LOGISTICA',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
   {code:'6A3EYR',empresa:'CEMENTOS MOCTEZUMA SA DE CV',nombre:'Jose Armando Sánchez López',cargo:'Maestria',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
   {code:'HMTT43',empresa:'LUTSA',nombre:'Francisco Javier Limon',cargo:'Jefe de mantenimiento',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
   {code:'W2ZYIO',empresa:'GRUPO MORSA DE MEXICO',nombre:'Esteban Martinez',cargo:'DIRECTOR DE OPERACIONES',comunidad:'Buyer',etiqueta:'COMPRADOR',tiene_perfil:'false'},
@@ -719,16 +722,18 @@ const ASOCIADOS_REAL=[
   {code:'BXS6Z3',empresa:'SOLIN LOGISTICA',nombre:'Jesus Aldair Gama Alcantara',cargo:'COMERCIAL',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'PMCMKQ',empresa:'MEXPROUD SHIPPING',nombre:'Carlos Hurtado Garay',cargo:'SALES MANAGER',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'U5FE2X',empresa:'ALPHA FULLCOMMERCE MX',nombre:'Adrián  Navarrete',cargo:'Director de Desarrollo de Negocios',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
-  {code:'RT61SB',empresa:'ALPHA FULLCOMMERCE',nombre:'Carlos Ońate',cargo:'COO',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'WY2Q7T',empresa:'TECHSAGPS',nombre:'Fernando Torres',cargo:'DIRECTOR',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'8IGGET',empresa:'SDL GROUP',nombre:'carlos ceballos',cargo:'Presidente',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
+  {code:'LCTEFM',empresa:'CARROCERIAS MONCADA',nombre:'Rigoberto Moncada Flores',cargo:'Director general',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
+  {code:'DCR7P0',empresa:'CARROCERIAS MONCADA',nombre:'kury moncada',cargo:'GERENCIA DE INGENIERIA',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
+  {code:'8X3RXV',empresa:'CARROCERIAS MONCADA',nombre:'MARCO ANTONIO MARIAS',cargo:'ASESOR DE VENTAS',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'W7AYSI',empresa:'Intangles',nombre:'Hernán Medina',cargo:'Sr. Director, Business Development',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'MMJAQU',empresa:'SUPPLINK',nombre:'Cristina  Garcia',cargo:'Pricing Manager',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'08S9JX',empresa:'Ituran',nombre:'Allán  Trevisán',cargo:'Director',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'2POIKJ',empresa:'Métrica Móvil',nombre:'Santiago Flores',cargo:'Director de implementación IA',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'MBWTLG',empresa:'VOLVO',nombre:'Alexandre Linhares',cargo:'Director comercial',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'PK0ZON',empresa:'XCF SA DE CV',nombre:'Cynthia  Alonso',cargo:'Director de Administracion y Finanzas',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
-  {code:'JV4QEA',empresa:'TELCEL',nombre:'Gerardo Cruz',cargo:'Gerentes de Clientes Corporativos',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
+  {code:'JV4QEA',empresa:'TELCEL',nombre:'Gerardo Cruz',cargo:'Gerente de Clientes Corporativos',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'XJTWT5',empresa:'TELCEL',nombre:'Esau Araiza',cargo:'Analista de Soluciones Empresariales de Datos',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'TAQO3E',empresa:'Telcel Empresas',nombre:'Gisela  Sosa',cargo:'Jefe de MKT',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
   {code:'ISYIRZ',empresa:'UVICUO',nombre:'Iker Haro Escandon',cargo:'CEO / CO-FOUNDER',comunidad:'Associate',etiqueta:'ASSOCIATE',tiene_perfil:'false'},
